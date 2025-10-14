@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ashis's project</title>
+    <link rel="shortcut icon" href="./images/icon.ico" type="image/x-icon">
+    <link rel="icon" href="./images/icon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="main.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="drag-container">
+        <div id="spin-container">
+            <img src="./images/r1.jpg" alt="">
+            <img src="./images/r2.jpg" alt="">
+            <img src="./images/r3.jpg" alt="">
+            <img src="./images/r4.jpg" alt="">
+            <img src="./images/r5.jpg" alt="">
+            <img src="./images/r6.jpg" alt="">
+            <img src="./images/r7.png" alt="">
+            <img src="./images/r8.png" alt="">
+            <img src="./images/r9.png" alt="">
+            <img src="./images/r10.png" alt="">
+            <p style="">Happy<span style=""> Birthday</span> Bidhusmita</p>
+            <button class="button" onclick="confetti()"></button>
+        </div>
+        <div id="ground"></div>
+    </div>
+
+    <div id="music-container"></div>
+    <!-- Mobile tap-to-start overlay (hidden by default) -->
+    <div id="mobile-overlay" style="display:none;position:fixed;inset:0;z-index:2147483646;background:rgba(0,0,0,0.6);color:#fff;align-items:center;justify-content:center;display:flex;flex-direction:column;">
+        <div style="font-size:20px;font-weight:600;margin-bottom:8px;">Tap to start</div>
+        <div style="font-size:13px;opacity:0.9;">Touch anywhere to play music</div>
+    </div>
+    <div id="canva">
+        <canvas id="canvas"></canvas>
+    </div> 
+
+    <!-- Audio tự động phát -->
+     <audio id="myAudio" autoplay playsinline >
+        <source src="music/setlove.mp3" type="audio/mp3">
+        <source src="music/setlove.ogg" type="audio/ogg">
+    </audio> 
+    <!-- Hidden control: we'll start audio on first user interaction (click/touch/pointer) -->
+    <div id="audio-controls" style="display:none;position:fixed;left:16px;bottom:16px;z-index:9999;">
+        <button id="playBtn" aria-label="Play music">Play ♫</button>
+    </div>
+      <script src='https://cdn.jsdelivr.net/npm/canvas-confetti@1/dist/confetti.browser.min.js'></script>
+    <script src="main.js"></script>
+
+    <script>
+        window.onload = function () {
+            var audio = document.getElementById("myAudio");
+            var playBtn = document.getElementById('playBtn');
+            // Start audio on first user gesture (click/touch/pointer anywhere on document)
+            function startAudioOnFirstInteraction() {
+                function startOnce() {
+                    // Hide overlay immediately so the text disappears on tap
+                    var mobileOverlay = document.getElementById('mobile-overlay');
+                    if(mobileOverlay) mobileOverlay.style.display = 'none';
+                    // Ensure unmuted and try to play; browsers will accept this because it's triggered by user gesture
+                    audio.muted = false;
+                    audio.play().then(function(){
+                        // remove listeners after success
+                        removeListeners();
+                    }).catch(function(e){
+                        console.log('Audio playback failed on user gesture:', e);
+                        removeListeners();
+                    });
+                }
+
+                function removeListeners(){
+                    document.removeEventListener('click', startOnce);
+                    document.removeEventListener('touchstart', startOnce);
+                    document.removeEventListener('pointerdown', startOnce);
+                    // hide any controls if present
+                    var ctr = document.getElementById('audio-controls');
+                    if(ctr) ctr.style.display = 'none';
+                }
+
+                document.addEventListener('click', startOnce, { once: true });
+                document.addEventListener('touchstart', startOnce, { once: true });
+                document.addEventListener('pointerdown', startOnce, { once: true });
+            }
+
+            // Initialize the one-time listener
+            // Try the generic one-time listener
+            startAudioOnFirstInteraction();
+
+            // Show mobile overlay on touch devices to instruct user to tap
+            var mobileOverlay = document.getElementById('mobile-overlay');
+            if((('ontouchstart' in window) || navigator.maxTouchPoints > 0) && mobileOverlay){
+                mobileOverlay.style.display = 'flex';
+            }
+
+            // Mobile fallback: create a full-screen invisible tap catcher so the first touch is guaranteed
+            // to reach our handler before other page scripts (some handlers may stop propagation).
+            if(('ontouchstart' in window) || navigator.maxTouchPoints > 0){
+                var tapCatcher = document.createElement('div');
+                tapCatcher.id = 'tap-catcher';
+                tapCatcher.style.position = 'fixed';
+                tapCatcher.style.left = '0';
+                tapCatcher.style.top = '0';
+                tapCatcher.style.right = '0';
+                tapCatcher.style.bottom = '0';
+                tapCatcher.style.zIndex = '2147483647'; // very high
+                tapCatcher.style.background = 'transparent';
+                // Make sure it doesn't block pointer events for accessibility tools after it's removed
+                document.body.appendChild(tapCatcher);
+
+                function onTapCatcher(e){
+                    // Hide overlay immediately so the text disappears on tap
+                    var mobileOverlay = document.getElementById('mobile-overlay');
+                    if(mobileOverlay) mobileOverlay.style.display = 'none';
+                    // Start audio and remove the catcher
+                    console.log('tap-catcher received event:', e.type);
+                    audio.muted = false;
+                    audio.play().then(function(){
+                        console.log('tap-catcher: audio.play() succeeded');
+                    }).catch(function(err){
+                        console.log('tap-catcher: audio.play() failed', err);
+                    }).finally(function(){
+                        // clean up listeners and remove catcher
+                        tapCatcher.removeEventListener('touchend', onTapCatcher);
+                        tapCatcher.removeEventListener('touchstart', onTapCatcher);
+                        tapCatcher.removeEventListener('pointerup', onTapCatcher);
+                        tapCatcher.removeEventListener('pointerdown', onTapCatcher);
+                        tapCatcher.removeEventListener('click', onTapCatcher);
+                        if(tapCatcher.parentNode) tapCatcher.parentNode.removeChild(tapCatcher);
+                    });
+                }
+
+                tapCatcher.addEventListener('touchstart', onTapCatcher, { once: true });
+                tapCatcher.addEventListener('touchend', onTapCatcher, { once: true });
+                tapCatcher.addEventListener('pointerdown', onTapCatcher, { once: true });
+                tapCatcher.addEventListener('pointerup', onTapCatcher, { once: true });
+                tapCatcher.addEventListener('click', onTapCatcher, { once: true });
+            }
+
+            // Keep a silent attempt to play on load; this may be blocked by autoplay policy but we still try
+            audio.muted = false;
+            audio.play().catch(function (e) {
+                console.log('Audio playback failed:', e);
+            });
+
+            // Hiệu ứng pháo hoa và trái tim
+            const canvas = document.getElementById("canvas");
+            const ctx = canvas.getContext("2d");
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            function random(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            function Firework(x, y) {
+                this.x = x;
+                this.y = y;
+                this.radius = random(2, 4);
+                this.color = `hsl(${random(0, 360)}, 100%, 50%)`;
+                this.vx = random(-3, 3);
+                this.vy = random(-3, 3);
+                this.life = 100;
+            }
+
+            Firework.prototype.draw = function () {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            };
+
+            Firework.prototype.update = function () {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life--;
+            };
+
+            function Heart(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = random(20, 40);
+                this.color = 'red';
+                this.vy = random(-2, -1);
+                this.opacity = 1;
+            }
+
+            Heart.prototype.draw = function () {
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.bezierCurveTo(this.x - this.size / 2, this.y - this.size / 2, this.x - this.size, this.y + this.size / 3, this.x, this.y + this.size);
+                ctx.bezierCurveTo(this.x + this.size, this.y + this.size / 3, this.x + this.size / 2, this.y - this.size / 2, this.x, this.y);
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.opacity;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            };
+
+            Heart.prototype.update = function () {
+                this.y += this.vy;
+                this.opacity -= 0.01;
+            };
+
+            let fireworks = [];
+            let hearts = [];
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                if (Math.random() < 0.1) {
+                    fireworks.push(new Firework(random(0, canvas.width), random(0, canvas.height)));
+                }
+                if (Math.random() < 0.05) {
+                    hearts.push(new Heart(random(0, canvas.width), canvas.height));
+                }
+
+                fireworks.forEach((firework, index) => {
+                    firework.draw();
+                    firework.update();
+                    if (firework.life <= 0) {
+                        fireworks.splice(index, 1);
+                    }
+                });
+
+                hearts.forEach((heart, index) => {
+                    heart.draw();
+                    heart.update();
+                    if (heart.opacity <= 0) {
+                        hearts.splice(index, 1);
+                    }
+                });
+
+                requestAnimationFrame(animate);
+            }
+            animate();
+        };
+    </script>
+</body>
+
+</html>
